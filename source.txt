@@ -1,0 +1,8 @@
+## CoV-AbDab
+https://opig.stats.ox.ac.uk/webapps/covabdab/
+
+## Smallpox-AbDab
+Chappert P, Huetz F, Espinasse MA, Chatonnet F, Pannetier L, Da Silva L, Goetz C, Mégret J, Sokal A, Crickx E, Nemazanyy I, Jung V, Guerrera C, Storck S, Mahévas M, Cosma A, Revy P, Fest T, Reynaud CA, Weill JC. Human anti-smallpox long-lived memory B cells are defined by dynamic interactions in the splenic niche and long-lasting germinal center imprinting. Immunity. 2022 Oct 11;55(10):1872-1890.e9. doi: 10.1016/j.immuni.2022.08.019. Epub 2022 Sep 20. PMID: 36130603; PMCID: PMC7613742.
+
+## Tetanus-AbDab
+Ferreira-Gomes, M., Chen, Y., Durek, P. et al. Recruitment of plasma cells from IL-21-dependent and IL-21-independent immune reactions to the bone marrow. Nat Commun 15, 4182 (2024). https://doi.org/10.1038/s41467-024-48570-0
