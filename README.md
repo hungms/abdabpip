@@ -1,4 +1,4 @@
-# AbDabList
+# BCR-AbDab
 Database & Pipeline to find matching CDR3 sequences from scVDJseq output (from Dandelion)
 
 
