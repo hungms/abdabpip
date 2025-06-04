@@ -64,7 +64,7 @@ match_CDR3 <- function(
 
     # Logging
     #========================================================
-    log_message("match_CDR3")
+    log_message()
 
     # Format Data
     #========================================================
@@ -166,7 +166,7 @@ match_CDR3 <- function(
 
                     # calculate hamming distance
                     y <- tmp[[paste0("ref_", col)]]
-                    tmp[[paste0(col, "_levenshtein_dist")]] <- as.numeric(lapply(tmp$CDR3, function(x){stringdist::stringdist(cdr3, x, method = 'lv') / max(nchar(cdr3), nchar(x))}))}
+                    tmp[[paste0(col, "_levenshtein_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))}))}
                     }
             
             return(tmp)}

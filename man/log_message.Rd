@@ -4,7 +4,7 @@
 \alias{log_message}
 \title{Log message}
 \usage{
-log_message(fun, ...)
+log_message(...)
 }
 \value{
 The message
