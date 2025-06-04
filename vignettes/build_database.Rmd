@@ -1,0 +1,57 @@
+---
+title: "Build BCR Databases"
+vignette: >
+  %\VignetteIndexEntry{Build OmniPathR databases}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+author: "`r 'Author: Matthew Hung'`"
+date: "`r paste('Last Updated:', format(Sys.Date(), '%Y/%m/%d'))`"
+output:
+  html_document:
+    code_folding: hide
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: '#>'
+---
+```{r}
+library(tidyverse)
+```
+
+## Sars-CoV-2
+
+### CoV-AbDab
+```{r}
+dab1 <- read.csv("./resources/Sars-CoV-2/20240208_CoV-AbDab.csv")
+dab1 %>% head() %>% show()
+```
+
+```{r}
+dab1 <- dab1 %>%
+  filter(str_detect(Origin, "[Hh]uman")|str_detect(Origin, "[Mm]ouse")) %>%
+  mutate(
+    antigen = "Sars-CoV-2",
+    source = "CoV-AbDab",
+    data_source = Sources,
+    strain = `Binds.to`,
+    name = Name,
+    epitope = `Protein...Epitope`,
+    species = case_when(
+        str_detect(Origin, "[Hh]uman") ~ "human",
+        str_detect(Origin, "[Mm]ouse") ~ "mouse"),
+    VDJ_V = gsub(" .*", "", `Heavy.V.Gene`),
+    VDJ_J = gsub(" .*", "", `Heavy.J.Gene`),
+    VDJ_CDR3 = `CDRH3`,
+    VJ_V = gsub(" .*", "", `Light.V.Gene`),
+    VJ_J = gsub(" .*", "", `Light.J.Gene`),
+    VJ_CDR3 = `CDRL3`
+  ) %>%
+  dplyr::select(antigen, strain, source, data_source, name, epitope, species, VDJ_V, VDJ_J, VDJ_CDR3, VJ_V, VJ_J, VJ_CDR3) %>%
+  distinct(VDJ_V, VDJ_J, VDJ_CDR3, VJ_V, VJ_J, VJ_CDR3, .keep_all = TRUE)
+ 
+dim(dab1)
+```
+
+```{r}
+write.csv(dab1, "./inst/extdata/Sars-CoV-2.csv", row.names = FALSE)
+```
