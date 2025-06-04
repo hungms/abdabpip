@@ -5,6 +5,7 @@
 \title{Match CDR3 sequences between query and antigen collection}
 \usage{
 match_CDR3(
+  query,
   antigen,
   org,
   heavyCDR3,
@@ -19,6 +20,8 @@ match_CDR3(
 )
 }
 \arguments{
+\item{query}{The query data frame}
+
 \item{antigen}{The antigen to match}
 
 \item{org}{The organism to match}

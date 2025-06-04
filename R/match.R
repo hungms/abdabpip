@@ -1,5 +1,6 @@
 #' Match CDR3 sequences between query and antigen collection
 #' 
+#' @param query The query data frame
 #' @param antigen The antigen to match
 #' @param org The organism to match
 #' @param heavyCDR3 The heavy chain CDR3 sequence
@@ -15,6 +16,7 @@
 #' @export
 
 match_CDR3 <- function(
+    query,
     antigen,
     org,
     heavyCDR3,
