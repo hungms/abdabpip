@@ -33,3 +33,23 @@ log_message <- function(...) {
 
   message("#============================================")
 }
+
+
+#' Log progress bar
+#'
+#' @param i The current iteration
+#' @param n The total number of iterations
+#' @param pb The progress bar
+#' @return The progress bar
+#' @export
+log_progress_bar <- function(i, n, pb = NULL) {
+  if (is.null(pb)) {
+    pb <- txtProgressBar(min = 0, max = n, style = 3)
+    setTxtProgressBar(pb, i)
+    return(pb)
+  } else {
+    setTxtProgressBar(pb, i)
+    if (i == n) close(pb)
+    return(invisible(NULL))
+  }
+}

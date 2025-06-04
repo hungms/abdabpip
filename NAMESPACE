@@ -2,4 +2,5 @@
 
 export(get_reference)
 export(log_message)
+export(log_progress_bar)
 export(match_CDR3)

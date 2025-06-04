@@ -48,7 +48,8 @@ match_CDR3 <- function(
     stopifnot(all(dist_method %in% c("levenshtein", "hamming")))
 
     # check output_dir is valid
-    stopifnot(dir.exists(output_dir))
+    if(!is.null(output_dir)){
+        stopifnot(dir.exists(output_dir))}
 
     # check there are columns to match
     genes_to_match <- c(heavyV, heavyJ, lightV, lightJ)
@@ -61,10 +62,11 @@ match_CDR3 <- function(
     # check columns to match are in query data frame
     cols_to_match <- na.omit(cols_to_match)
     stopifnot(all(cols_to_match %in% colnames(query)))
+    message(paste0("\nMatching columns: ", paste0(names(cols_to_match), collapse = ", "), "..."))
 
     # Logging
     #========================================================
-    log_message()
+    #log_message()
 
     # Format Data
     #========================================================
@@ -89,8 +91,8 @@ match_CDR3 <- function(
     # add CDR3 length columns in reference data frame
     reference <- collection %>%
         mutate(
-            ref_heavyCDR3_length = nchar(heavyCDR3),
-            ref_lightCDR3_length = nchar(lightCDR3))
+            ref_heavyCDR3_length = nchar(ref_heavyCDR3),
+            ref_lightCDR3_length = nchar(ref_lightCDR3))
 
     # Run VJ Match
     #========================================================
@@ -101,10 +103,14 @@ match_CDR3 <- function(
     output.list <- list()
 
     # if hamming is in dist_method, run matching
+    message(paste0("\nRunning hamming distance matching..."))
     if("hamming" %in% dist_method){
 
         # for each reference sequence
         output.list[[1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
+
+            # log progress bar
+            log_progress_bar(i, nrow(reference))
 
             # merge reference data frame to each query sequence by GENE columnes
             if(any(!is.na(genes_to_match))){
@@ -115,12 +121,12 @@ match_CDR3 <- function(
             else{
                 tmp <- query
                 for(col in c(names(CDR3_to_match), paste0(names(CDR3_to_match), "_length"))){
-                    tmp[[col]] <- reference[i, ][[col]]}
+                    tmp[[col]] <- reference[i, ][[paste0("ref_", col)]]}
             }
 
             # hamming distance requires matching CDR3 length
-            if(any(str_detect(cols_to_match, "CDR3"))){
-                for(col in cols_to_match[str_detect(cols_to_match, "CDR3")]){
+            if(any(str_detect(names(cols_to_match), "CDR3"))){
+                for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
 
                     # filter query for matching CDR3 length in heavy/light chains
                     tmp <- tmp %>% 
@@ -128,7 +134,7 @@ match_CDR3 <- function(
 
                     # check if there are any matching sequences
                     if(nrow(tmp) == 0) {
-                        warning("No matching BCR sequences found")
+                        warning("\nNo matching BCR sequences found")
                         return(data.frame())}
 
                     # calculate hamming distance
@@ -139,7 +145,11 @@ match_CDR3 <- function(
 
 
     # if levenshtein is in dist_method, run matching
+    message(paste0("\nRunning levenshtein distance matching..."))
     if("levenshtein" %in% dist_method){
+
+        # log progress bar
+        log_progress_bar(i, nrow(reference))
 
         # for each reference sequence
         output.list[[2]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
@@ -153,15 +163,15 @@ match_CDR3 <- function(
             else{
                 tmp <- query
                 for(col in c(names(CDR3_to_match), paste0(names(CDR3_to_match), "_length"))){
-                    tmp[[col]] <- reference[i, ][[col]]}}
+                    tmp[[col]] <- reference[i, ][[paste0("ref_", col)]]}}
 
             #  levenshtein distance does not require matching CDR3 length
-            if(any(str_detect(cols_to_match, "CDR3"))){
-                for(col in cols_to_match[str_detect(cols_to_match, "CDR3")]){
+            if(any(str_detect(names(cols_to_match), "CDR3"))){
+                for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
 
                     # check if there are any matching sequences
                     if(nrow(tmp) == 0) {
-                        warning("No matching BCR sequences found")
+                        warning("\nNo matching BCR sequences found")
                         return(data.frame())}
 
                     # calculate hamming distance
@@ -173,25 +183,25 @@ match_CDR3 <- function(
         }}
 
     # combine outputs
-    output <- merge(output.list[[1]], output.list[[2]], by = "barcodes", all = T)
+    output <- merge(output.list[[1]], output.list[[2]], by = c("barcodes", names(cols_to_match),  paste0(names(CDR3_to_match), "_length")), all = T)
 
     # Format Output
     #========================================================
     # check if there are any matching sequences
     if(nrow(output) > 0){
+        message(paste0("\nFound ", nrow(output), " matching sequences, finding minimum CDR3 distance for each barcode..."))
 
         # get all distance columns
-        dist_cols <- grepl("_dist$", colnames(output))
+        dist_cols <- colnames(output)[str_detect(colnames(output), "_dist$")]
 
         # order output data frame 
         output <- output %>% 
             group_by(barcodes) %>% # group by barcode
             summarise(across(all_of(dist_cols), min, .names = "min_{.col}")) %>% # get minimum distance for each distance column
-            return(output)
 
         # write output to file
         if(!is.null(output_dir)){
-            filename <- paste0(output_dir, "/", antigen, "_", org, "_", "match_", paste0(cols_to_match, collapse = "_"), ".csv")
+            filename <- paste0(output_dir, "/", antigen, "_", org, "_", "match_", paste0(names(cols_to_match), collapse = "_"), ".csv")
             write.csv(output, filename, row.names = F)}
 
         # return output
@@ -199,6 +209,6 @@ match_CDR3 <- function(
 
     # if no matching sequences, return NULL
     else{
-        warning("No matching BCR sequences found")
+        warning("\nNo matching BCR sequences found")
         return(NULL)}
 }
