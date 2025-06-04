@@ -2,12 +2,13 @@
 #'
 #' @return The message
 #' @export
-log_function <- function(call = match.call(), ...) {
+log_message <- function(fun, ...) {
   
   # Capture the calling function's name and arguments
-  func_name <- as.character(call[[1]])
+  func_name <- fun
 
   # Get the arguments
+  call <- match.call()
   args_list <- as.list(call)[-1]
   
   # Get other messages
