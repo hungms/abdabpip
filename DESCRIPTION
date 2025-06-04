@@ -1,0 +1,20 @@
+Package: detectBCR
+Title:  An R package to detect and visualize antigen-specific BCRs
+Version: 0.0.0
+Authors@R: 
+    person(given = "Miu Shing", family = "Hung", email = "matthewhungms@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0009-0004-0412-4374"))
+Description: An R package to detect and visualize antigen-specific BCRs
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+URL: https://hungms.github.io/detectBCR/
+LazyData: true
+Imports:
+    dplyr,
+    magrittr,
+    stringr,
+    foreach,
+    doParallel,
+    alakazam,
+    stringdist
