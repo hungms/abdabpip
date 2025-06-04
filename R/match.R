@@ -1,3 +1,19 @@
+#' Match CDR3 sequences between query and antigen collection
+#' 
+#' @param antigen The antigen to match
+#' @param org The organism to match
+#' @param heavyCDR3 The heavy chain CDR3 sequence
+#' @param heavyV The heavy chain V gene
+#' @param heavyJ The heavy chain J gene
+#' @param lightCDR3 The light chain CDR3 sequence
+#' @param lightV The light chain V gene
+#' @param lightJ The light chain J gene
+#' @param dist_method The distance method to use
+#' @param ncores The number of cores to use
+#' @param output_dir The output directory
+#' @return A data frame with the matched CDR3 sequences
+#' @export
+
 match_CDR3 <- function(
     antigen,
     org,
