@@ -1,4 +1,4 @@
-"antigen","strain","source","data_source","name","epitope","species","VDJ_V","VDJ_J","VDJ_CDR3","VJ_V","VJ_J","VJ_CDR3"
+"antigen","strain","source","data_source","name","epitope","species","heavyV","heavyJ","heavyCDR3","lightV","lightJ","lightCDR3"
 "Sars-CoV-2","SARS-CoV2_WT;SARS-CoV2_Beta","CoV-AbDab","Nicholas Curtis et al., 2023 (https://www.biorxiv.org/content/10.1101/2023.09.08.556349v1)","Curtis_3548_S-2","S; RBD/non-RBD","human","IGHV4-31","IGHJ4","ARGSRNDLRDFDY","ND","ND","QSYNSSLSGLVV"
 "Sars-CoV-2","SARS-CoV2_WT;SARS-CoV2_Beta","CoV-AbDab","Nicholas Curtis et al., 2023 (https://www.biorxiv.org/content/10.1101/2023.09.08.556349v1)","Curtis_3548_S-7","S; non-RBD","human","IGHV4-34","IGHJ4","AREPYSSGMGGRDY","ND","ND","QQYGSSPYT"
 "Sars-CoV-2","SARS-CoV2_WT","CoV-AbDab","Nicholas Curtis et al., 2023 (https://www.biorxiv.org/content/10.1101/2023.09.08.556349v1)","Curtis_3548_RBD-15","S; iso-RBD","human","IGHV4-59","IGHJ5","AKGIYSSSSYWFGP","ND","ND","QAWDSSTVV"
