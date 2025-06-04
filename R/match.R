@@ -87,8 +87,8 @@ match_CDR3 <- function(
     # add CDR3 length columns in reference data frame
     reference <- collection %>%
         mutate(
-            ref_VDJ_CDR3_length = nchar(VDJ_CDR3),
-            ref_VJ_CDR3_length = nchar(VJ_CDR3))
+            ref_heavyCDR3_length = nchar(heavyCDR3),
+            ref_lightCDR3_length = nchar(lightCDR3))
 
     # Run VJ Match
     #========================================================
