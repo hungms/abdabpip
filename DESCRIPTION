@@ -17,5 +17,6 @@ Imports:
     tibble,
     foreach,
     doParallel,
+    doSNOW,
     alakazam,
     stringdist

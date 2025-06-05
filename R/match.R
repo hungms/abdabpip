@@ -35,6 +35,12 @@ match_CDR3 <- function(
     # check query is a data frame
     stopifnot(is.data.frame(query))
 
+    # check if there are any invalid CDR3 sequences in heavyCDR3
+    rows_to_remove <- !str_detect(query[[heavyCDR3]], "[A-Z][A-Z][A-Z]")
+    if(any(rows_to_remove)){
+        message(paste0("\nRemoving ", sum(rows_to_remove), " rows with invalid CDR3 sequences in ", heavyCDR3, " in QUERY data frame..."))
+        query <- query[!rows_to_remove, ]}
+
     # check ncores is valid
     stopifnot(ncores > 0 & is.numeric(ncores))
 
@@ -90,6 +96,9 @@ match_CDR3 <- function(
 
     # add CDR3 length columns in reference data frame
     reference <- collection %>%
+        filter(org == org) %>%
+        filter(ref_heavyCDR3 != "") %>%
+        filter(!is.na(ref_heavyCDR3)) %>%
         mutate(
             ref_heavyCDR3_length = nchar(ref_heavyCDR3),
             ref_lightCDR3_length = nchar(ref_lightCDR3))
@@ -98,92 +107,118 @@ match_CDR3 <- function(
     #========================================================
     # register parallel backend
     doParallel::registerDoParallel(ncores)
-
+    
     # create list to store outputs
     output.list <- list()
 
     # if hamming is in dist_method, run matching
-    message(paste0("\nRunning hamming distance matching..."))
     if("hamming" %in% dist_method){
+        message(paste0("\nRunning hamming distance matching..."))
 
         # for each reference sequence
-        output.list[[1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
-
+        output.list[[length(output.list) + 1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
             # log progress bar
             log_progress_bar(i, nrow(reference))
 
             # merge reference data frame to each query sequence by GENE columnes
-            if(any(!is.na(genes_to_match))){
+            if(length(genes_to_match) > 0){
                 tmp <- query %>%
-                    semi_join(reference[i, ], by = c(names(genes_to_match)))}
+                    merge(reference[i, ], by = c(names(genes_to_match)), all.x = T)}
                     
             # otherwise, add CDR3 sequence and length columns from reference data frame in query data frame
             else{
                 tmp <- query
-                for(col in c(names(CDR3_to_match), paste0(names(CDR3_to_match), "_length"))){
-                    tmp[[col]] <- reference[i, ][[paste0("ref_", col)]]}
+                for(col in colnames(reference)[!colnames(reference) %in% names(genes_to_match)]){
+                    tmp[[col]] <- reference[i, ][[col]]}
             }
 
             # hamming distance requires matching CDR3 length
-            if(any(str_detect(names(cols_to_match), "CDR3"))){
-                for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
+            for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
 
-                    # filter query for matching CDR3 length in heavy/light chains
-                    tmp <- tmp %>% 
-                        filter(!!sym(paste0(col, "_length")) == !!sym(paste0("ref_", col, "_length")))
+                # filter query for matching CDR3 length in heavy/light chains
+                tmp <- tmp %>% 
+                    filter(!!sym(paste0(col, "_length")) == !!sym(paste0("ref_", col, "_length")))
 
-                    # check if there are any matching sequences
-                    if(nrow(tmp) == 0) {
-                        warning("\nNo matching BCR sequences found")
-                        return(data.frame())}
+                # check if there are any matching sequences
+                if(nrow(tmp) == 0) {
+                    warning("\nNo matching BCR sequences found")
+                    next}
 
-                    # calculate hamming distance
-                    y <- tmp[[paste0("ref_", col)]]
-                    tmp[[paste0(col, "_hamming_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){alakazam::seqDist(y, x, alakazam::getAAMatrix()) / nchar(y)}))}}
-                
+                # calculate hamming distance
+                y <- reference[i, ][[paste0("ref_", col)]]
+                tmp[[paste0(col, "_dist_method")]] <- "hamming"
+                if(is.na(y)){
+                    tmp[[paste0(col, "_dist")]] <- NA}
+                else{
+                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){alakazam::seqDist(y, x, alakazam::getAAMatrix()) / nchar(y)}))}}
+
             return(tmp)}
+        }
 
 
     # if levenshtein is in dist_method, run matching
-    message(paste0("\nRunning levenshtein distance matching..."))
     if("levenshtein" %in% dist_method){
-
-        # log progress bar
-        log_progress_bar(i, nrow(reference))
-
+        message(paste0("\nRunning levenshtein distance matching..."))
+        
         # for each reference sequence
-        output.list[[2]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
-
+        output.list[[length(output.list) + 1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
+            # log progress bar
+            log_progress_bar(i, nrow(reference))
+            
             # merge reference data frame to each query sequence by GENE columnes
-            if(any(!is.na(genes_to_match))){
+            if(length(genes_to_match) > 0){
                 tmp <- query %>%
-                    semi_join(reference[i, ], by = c(names(genes_to_match)))}
+                    merge(reference[i, ], by = c(names(genes_to_match)), all.x = T)}
                     
             # otherwise, add CDR3 sequence and length columns from reference data frame in query data frame
             else{
                 tmp <- query
-                for(col in c(names(CDR3_to_match), paste0(names(CDR3_to_match), "_length"))){
-                    tmp[[col]] <- reference[i, ][[paste0("ref_", col)]]}}
+                for(col in colnames(reference)[!colnames(reference) %in% names(genes_to_match)]){
+                    tmp[[col]] <- reference[i, ][[col]]}
+            }
 
             #  levenshtein distance does not require matching CDR3 length
-            if(any(str_detect(names(cols_to_match), "CDR3"))){
-                for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
+            for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
 
-                    # check if there are any matching sequences
-                    if(nrow(tmp) == 0) {
-                        warning("\nNo matching BCR sequences found")
-                        return(data.frame())}
-
-                    # calculate hamming distance
-                    y <- tmp[[paste0("ref_", col)]]
-                    tmp[[paste0(col, "_levenshtein_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))}))}
+                # check if there are any matching sequences
+                if(nrow(tmp) == 0) {
+                    warning("\nNo matching BCR sequences found")
+                    next
                     }
+
+                # calculate levenshtein distance
+                y <- reference[i, ][[paste0("ref_", col)]]
+                tmp[[paste0(col, "_dist_method")]] <- "levenshtein"
+                if(is.na(y)){
+                    tmp[[paste0(col, "_dist")]] <- NA}
+                else{
+                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))}))}
+                }
             
             return(tmp)}
-        }}
+        }
 
     # combine outputs
-    output <- merge(output.list[[1]], output.list[[2]], by = c("barcodes", names(cols_to_match),  paste0(names(CDR3_to_match), "_length")), all = T)
+    output <- bind_rows(output.list)
+
+    # get all distance columns
+    dist_cols <- colnames(output)[str_detect(colnames(output), "_dist$")]
+    dist_method_cols <- colnames(output)[str_detect(colnames(output), "_dist_method$")]
+
+    # combine outputs
+    output <- output %>%
+        # remove rows with NA in ref_heavyCDR3
+        filter(!is.na(ref_heavyCDR3)) 
+    
+    # Filter for rows where all dist_method values are the same
+    if(length(dist_method_cols) > 1) {
+        output <- output %>%
+            rowwise() %>%
+            mutate(all_dist_methods_same = n_distinct(c_across(all_of(dist_method_cols))) == 1) %>%
+            filter(all_dist_methods_same) %>%
+            select(-all_dist_methods_same) %>%
+            ungroup()
+    }
 
     # Format Output
     #========================================================
@@ -191,15 +226,16 @@ match_CDR3 <- function(
     if(nrow(output) > 0){
         message(paste0("\nFound ", nrow(output), " matching sequences, finding minimum CDR3 distance for each barcode..."))
 
-        # get all distance columns
-        dist_cols <- colnames(output)[str_detect(colnames(output), "_dist$")]
-
         # order output data frame 
         output <- output %>% 
+            rowwise() %>%
+            mutate(sum_dist = mean(c_across(all_of(dist_cols)), na.rm = T)) %>%
+            ungroup() %>%
             group_by(barcodes) %>% # group by barcode
-            summarise(across(all_of(dist_cols), min, .names = "min_{.col}")) %>% # get minimum distance for each distance column
+            slice_min(n = 1, order_by = sum_dist) %>% # get the barcode with the minimum sum of distances
+            ungroup()
 
-        # write output to file
+        #write output to file
         if(!is.null(output_dir)){
             filename <- paste0(output_dir, "/", antigen, "_", org, "_", "match_", paste0(names(cols_to_match), collapse = "_"), ".csv")
             write.csv(output, filename, row.names = F)}
