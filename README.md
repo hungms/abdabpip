@@ -60,17 +60,19 @@ Currently our collection contains BCR sequences bind to the following antigens :
 ```
 
 ## Glossary
-Terms :
-`Public Clones` = Clones containing BCR sequence matching our antigen-binding BCR database
-`Convergent Clones` = Antigen-specific clones that are present in multiple individuals
+Terms :  
+  
+`Public Clones` = Clones containing BCR sequence matching our antigen-binding BCR database  
+`Convergent Clones` = Antigen-specific clones that are present in multiple individuals  
 
-Abbreviations :
-`heavyV` = Heavy chain V gene
-`heavyJ` = Heavy chain J gene
-`heavyCDR3` = Heavy chain CDR3 amino acid sequence
-`lightV` = Light chain V gene
-`lightJ` = Light chain J gene
-`ligjtCDR3` = Light chain CDR3 amino acid sequence
+Abbreviations :  
+  
+`heavyV` = Heavy chain V gene  
+`heavyJ` = Heavy chain J gene  
+`heavyCDR3` = Heavy chain CDR3 amino acid sequence  
+`lightV` = Light chain V gene  
+`lightJ` = Light chain J gene  
+`ligjtCDR3` = Light chain CDR3 amino acid sequence  
 
 ## Inspiration
 Codes were adapted from previous publication in Cell Reports :
