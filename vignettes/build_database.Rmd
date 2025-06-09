@@ -16,42 +16,157 @@ knitr:
 ---
 ```{r}
 library(tidyverse)
+library(readxl)
 ```
 
 ## Sars-CoV-2
+```{r}
+covid_dab <- list()
+```
 
 ### CoV-AbDab
 ```{r}
-dab1 <- read.csv("./resources/Sars-CoV-2/20240208_CoV-AbDab.csv")
-dab1 %>% head() %>% show()
+dab <- read.csv("./resources/Sars-CoV-2/20240208_CoV-AbDab.csv")
+dab %>% head() %>% show()
 ```
 
 ```{r}
-dab1 <- dab1 %>%
+dab <- dab %>%
   filter(str_detect(Origin, "[Hh]uman")|str_detect(Origin, "[Mm]ouse")) %>%
   mutate(
     antigen = "Sars-CoV-2",
-    source = "CoV-AbDab",
-    data_source = Sources,
-    strain = `Binds.to`,
-    name = Name,
-    epitope = `Protein...Epitope`,
-    species = case_when(
+    ref_source = "CoV-AbDab",
+    ref_data = Sources,
+    ref_strain = `Binds.to`,
+    ref_name = Name,
+    ref_epitope = `Protein...Epitope`,
+    ref_org = case_when(
         str_detect(Origin, "[Hh]uman") ~ "human",
         str_detect(Origin, "[Mm]ouse") ~ "mouse"),
-    VDJ_V = gsub(" .*", "", `Heavy.V.Gene`),
-    VDJ_J = gsub(" .*", "", `Heavy.J.Gene`),
-    VDJ_CDR3 = `CDRH3`,
-    VJ_V = gsub(" .*", "", `Light.V.Gene`),
-    VJ_J = gsub(" .*", "", `Light.J.Gene`),
-    VJ_CDR3 = `CDRL3`
+    ref_heavyV = gsub(" .*", "", `Heavy.V.Gene`),
+    ref_heavyJ = gsub(" .*", "", `Heavy.J.Gene`),
+    ref_heavyCDR3 = paste0("C", `CDRH3`, "W"),
+    ref_lightV = gsub(" .*", "", `Light.V.Gene`),
+    ref_lightJ = gsub(" .*", "", `Light.J.Gene`),
+    ref_lightCDR3 = paste0("C", `CDRL3`, "W")
   ) %>%
-  dplyr::select(antigen, strain, source, data_source, name, epitope, species, VDJ_V, VDJ_J, VDJ_CDR3, VJ_V, VJ_J, VJ_CDR3) %>%
-  distinct(VDJ_V, VDJ_J, VDJ_CDR3, VJ_V, VJ_J, VJ_CDR3, .keep_all = TRUE)
+  dplyr::select(antigen, ref_strain, ref_source, ref_data, ref_name, ref_epitope, ref_org, ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3) %>%
+  distinct(ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3, .keep_all = TRUE)
  
-dim(dab1)
+dim(dab)
+
+covid_dab[[1]] <- dab
+```
+
+### LopezDeAssis_2023
+```{r}
+dab <- read.csv("./resources/Sars-CoV-2/LopezDeAssis_2023.csv")
+dab %>% head() %>% show()
 ```
 
 ```{r}
-write.csv(dab1, "./inst/extdata/Sars-CoV-2.csv", row.names = FALSE)
+dab <- dab %>%
+  mutate(
+    antigen = "Sars-CoV-2",
+    ref_source = "LopezDeAssis_2023",
+    ref_data = ref_source,
+    ref_strain = "mRNA-1273",
+    ref_name = `X`,
+    ref_epitope = "S2P",
+    ref_org = "human",
+    ref_heavyV = v_call_VDJ_main,
+    ref_heavyJ = j_call_VDJ_main,
+    ref_heavyCDR3 = junction_aa_VDJ,
+    ref_lightV = v_call_VJ_main,
+    ref_lightJ = j_call_VJ_main,
+    ref_lightCDR3 = junction_aa_VJ
+  ) %>%
+  dplyr::select(antigen, ref_strain, ref_source, ref_data, ref_name, ref_epitope, ref_org, ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3) %>%
+  distinct(ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3, .keep_all = TRUE)
+ 
+dim(dab)
+
+covid_dab[[2]] <- dab
+```
+
+```{r}
+covid_dab <- bind_rows(covid_dab)
+write.csv(covid_dab, "./inst/extdata/Sars-CoV-2.csv", row.names = FALSE)
+```
+
+
+## Vaccinia
+```{r}
+vaccinia_dab <- list()
+```
+
+### Chappert_2022 IGH only
+```{r}
+dab <- read_excel("./resources/Vaccinia/Chappert_2022.xlsx", sheet = 3, skip = 2)
+dab %>% head() %>% show()
+```
+
+```{r}
+dab <- dab %>%
+  mutate(
+    antigen = "Vaccinia",
+    ref_source = "Chappert_2022",
+    ref_data = ref_source,
+    ref_strain = "Vaccinia",
+    ref_name = sequence_id,
+    ref_epitope = "B5",
+    ref_org = "human",
+    ref_heavyV = gsub("\\*.*", "", v_call),
+    ref_heavyJ = gsub("\\*.*", "", j_call),
+    ref_heavyCDR3 = cdr3,
+    ref_lightV = NA,
+    ref_lightJ = NA,
+    ref_lightCDR3 = NA
+  ) %>%
+  dplyr::select(antigen, ref_strain, ref_source, ref_data, ref_name, ref_epitope, ref_org, ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3) %>%
+  distinct(ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3, .keep_all = TRUE)
+ 
+dim(dab)
+
+vaccinia_dab[[1]] <- dab
+```
+
+
+### Chappert_2022 IGH + IGL
+```{r}
+dab <- read_excel("./resources/Vaccinia/Chappert_2022.xlsx", sheet = 4, skip = 3)
+dab %>% head() %>% show()
+```
+
+```{r}
+dab <- dab %>%
+  mutate(
+    antigen = "Vaccinia",
+    ref_source = "Chappert_2022",
+    ref_data = ref_source,
+    ref_strain = "Vaccinia",
+    ref_name = cell_id,
+    ref_epitope = "B5",
+    ref_org = "human",
+    ref_heavyV = gsub("\\*.*", "", `v_call...8`),
+    ref_heavyJ = gsub("\\*.*", "", `j_call...10`),
+    ref_heavyCDR3 = `cdr3...11`,
+    ref_lightV = gsub("\\*.*", "", `v_call...16`),
+    ref_lightJ = gsub("\\*.*", "", `j_call...17`),
+    ref_lightCDR3 = `cdr3...18`
+  ) %>%
+  dplyr::select(antigen, ref_strain, ref_source, ref_data, ref_name, ref_epitope, ref_org, ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3) %>%
+  distinct(ref_heavyV, ref_heavyJ, ref_heavyCDR3, ref_lightV, ref_lightJ, ref_lightCDR3, .keep_all = TRUE)
+ 
+dim(dab)
+
+vaccinia_dab[[2]] <- dab
+```
+
+
+
+
+```{r}
+vaccinia_dab <- bind_rows(vaccinia_dab)
+write.csv(vaccinia_dab, "./inst/extdata/Vaccinia.csv", row.names = FALSE)
 ```
