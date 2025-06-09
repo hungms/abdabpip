@@ -36,7 +36,8 @@ match_CDR3 <- function(
     stopifnot(is.data.frame(query))
 
     # check if there are any invalid CDR3 sequences in heavyCDR3
-    rows_to_remove <- !str_detect(query[[heavyCDR3]], "[A-Z][A-Z][A-Z]")
+    ## remove rows with less than 5 amino acids in heavyCDR3
+    rows_to_remove <- !str_detect(query[[heavyCDR3]], "^(?=(?:[^A-Z]*[A-Z]){5})[A-Z]+$")
     if(any(rows_to_remove)){
         message(paste0("\nRemoving ", sum(rows_to_remove), " rows with invalid CDR3 sequences in ", heavyCDR3, " in QUERY data frame..."))
         query <- query[!rows_to_remove, ]}
@@ -57,18 +58,18 @@ match_CDR3 <- function(
     if(!is.null(output_dir)){
         stopifnot(dir.exists(output_dir))}
 
-    # check there are columns to match
+    # store columns to match
     genes_to_match <- c(heavyV, heavyJ, lightV, lightJ)
     names(genes_to_match) <- c("heavyV", "heavyJ", "lightV", "lightJ")
     CDR3_to_match <- c(heavyCDR3, lightCDR3)
     names(CDR3_to_match) <- c("heavyCDR3", "lightCDR3")
-    cols_to_match <- c(genes_to_match, CDR3_to_match)
-    stopifnot(any(!is.na(cols_to_match)))
 
     # check columns to match are in query data frame
-    cols_to_match <- na.omit(cols_to_match)
+    genes_to_match <- genes_to_match[!is.na(genes_to_match)]
+    CDR3_to_match <- CDR3_to_match[!is.na(CDR3_to_match)]
+    cols_to_match <- c(genes_to_match, CDR3_to_match)
+
     stopifnot(all(cols_to_match %in% colnames(query)))
-    message(paste0("\nMatching columns: ", paste0(names(cols_to_match), collapse = ", "), "..."))
 
     # Logging
     #========================================================
@@ -96,12 +97,16 @@ match_CDR3 <- function(
 
     # add CDR3 length columns in reference data frame
     reference <- collection %>%
-        filter(org == org) %>%
+        filter(ref_org == org) %>%
         filter(ref_heavyCDR3 != "") %>%
         filter(!is.na(ref_heavyCDR3)) %>%
         mutate(
             ref_heavyCDR3_length = nchar(ref_heavyCDR3),
             ref_lightCDR3_length = nchar(ref_lightCDR3))
+
+    message(paste0("\nMatching ", nrow(query), " BCR sequences in QUERY against ", nrow(reference), " BCR sequences in ", org, " REFERENCE..."))
+    message(paste0("\nMatching columns: ", paste0(names(cols_to_match), collapse = ", "), "..."))
+    message(paste0("\nSearching for ", antigen, "-specific BCR sequences..."))
 
     # Run VJ Match
     #========================================================
@@ -120,18 +125,18 @@ match_CDR3 <- function(
             # log progress bar
             log_progress_bar(i, nrow(reference))
 
-            # merge reference data frame to each query sequence by GENE columnes
-            if(length(genes_to_match) > 0){
-                tmp <- query %>%
-                    merge(reference[i, ], by = c(names(genes_to_match)), all.x = T)}
-                    
-            # otherwise, add CDR3 sequence and length columns from reference data frame in query data frame
-            else{
-                tmp <- query
-                for(col in colnames(reference)[!colnames(reference) %in% names(genes_to_match)]){
-                    tmp[[col]] <- reference[i, ][[col]]}
-            }
+            # add CDR3 sequence and length columns from reference data frame in query data frame
+            tmp <- query
+            for(col in colnames(reference)){
+                tmp[[col]] <- reference[i, ][[col]]}
 
+            # filter query for matching CDR3 sequence in heavy/light chains
+            if(length(genes_to_match) > 0){
+                for(col in names(genes_to_match)){
+                    tmp <- tmp %>%
+                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))}
+            }
+            
             # hamming distance requires matching CDR3 length
             for(col in names(cols_to_match)[str_detect(names(cols_to_match), "CDR3")]){
 
@@ -147,7 +152,12 @@ match_CDR3 <- function(
                 # calculate hamming distance
                 y <- reference[i, ][[paste0("ref_", col)]]
                 tmp[[paste0(col, "_dist_method")]] <- "hamming"
-                if(is.na(y)){
+
+                # query must have valid CDR3 sequence
+                cond1 <- !str_detect(y, "^(?=(?:[^A-Z]*[A-Z]){5})[A-Z]+$")
+                cond2 <- any(is.na(tmp[[col]]))
+
+                if(any(cond1, cond2)){
                     tmp[[paste0(col, "_dist")]] <- NA}
                 else{
                     tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){alakazam::seqDist(y, x, alakazam::getAAMatrix()) / nchar(y)}))}}
@@ -164,17 +174,17 @@ match_CDR3 <- function(
         output.list[[length(output.list) + 1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
             # log progress bar
             log_progress_bar(i, nrow(reference))
-            
-            # merge reference data frame to each query sequence by GENE columnes
-            if(length(genes_to_match) > 0){
-                tmp <- query %>%
-                    merge(reference[i, ], by = c(names(genes_to_match)), all.x = T)}
-                    
-            # otherwise, add CDR3 sequence and length columns from reference data frame in query data frame
-            else{
-                tmp <- query
-                for(col in colnames(reference)[!colnames(reference) %in% names(genes_to_match)]){
+
+            # add CDR3 sequence and length columns from reference data frame in query data frame
+            tmp <- query
+            for(col in colnames(reference)){
                     tmp[[col]] <- reference[i, ][[col]]}
+            
+            # filter query for matching CDR3 sequence in heavy/light chains
+            if(length(genes_to_match) > 0){
+                for(col in names(genes_to_match)){
+                    tmp <- tmp %>%
+                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))}
             }
 
             #  levenshtein distance does not require matching CDR3 length
@@ -189,7 +199,12 @@ match_CDR3 <- function(
                 # calculate levenshtein distance
                 y <- reference[i, ][[paste0("ref_", col)]]
                 tmp[[paste0(col, "_dist_method")]] <- "levenshtein"
-                if(is.na(y)){
+
+                # query must have valid CDR3 sequence
+                cond1 <- !str_detect(y, "^(?=(?:[^A-Z]*[A-Z]){5})[A-Z]+$")
+                cond2 <- any(is.na(tmp[[col]]))
+                
+                if(any(cond1, cond2)){
                     tmp[[paste0(col, "_dist")]] <- NA}
                 else{
                     tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))}))}
@@ -211,20 +226,18 @@ match_CDR3 <- function(
         filter(!is.na(ref_heavyCDR3)) 
     
     # Filter for rows where all dist_method values are the same
-    if(length(dist_method_cols) > 1) {
-        output <- output %>%
-            rowwise() %>%
-            mutate(all_dist_methods_same = n_distinct(c_across(all_of(dist_method_cols))) == 1) %>%
-            filter(all_dist_methods_same) %>%
-            select(-all_dist_methods_same) %>%
-            ungroup()
-    }
+    output <- output %>%
+        rowwise() %>%
+        mutate(all_dist_methods_same = n_distinct(c_across(all_of(dist_method_cols)))) %>%
+        filter(all_dist_methods_same == 1) %>%
+        select(-all_dist_methods_same) %>%
+        ungroup()
 
     # Format Output
     #========================================================
     # check if there are any matching sequences
     if(nrow(output) > 0){
-        message(paste0("\nFound ", nrow(output), " matching sequences, finding minimum CDR3 distance for each barcode..."))
+        message(paste0("Finding minimum CDR3 distance for each barcode..."))
 
         # order output data frame 
         output <- output %>% 
@@ -234,6 +247,9 @@ match_CDR3 <- function(
             group_by(barcodes) %>% # group by barcode
             slice_min(n = 1, order_by = sum_dist) %>% # get the barcode with the minimum sum of distances
             ungroup()
+
+        # found matching BCR sequences
+        message(paste0("Found ", nrow(output), " BCR sequences in QUERY that has a match in the REFERENCE..."))
 
         #write output to file
         if(!is.null(output_dir)){
