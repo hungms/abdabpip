@@ -1,0 +1,100 @@
+---
+title: "Get Started"
+vignette: >
+  %\VignetteIndexEntry{Build OmniPathR databases}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+author: "`r 'Author: Matthew Hung'`"
+date: "`r paste('Last Updated:', format(Sys.Date(), '%Y/%m/%d'))`"
+output:
+  html_document:
+    code_folding: hide
+knitr:
+  opts_chunk:
+    collapse: true
+    comment: '#>'
+---
+
+
+## Load the package
+```{r}
+library(detectBCR)
+```
+
+
+## Get example data
+```{r}
+path <- system.file("extdata", "dandelion_metadata.csv", package = "detectBCR")
+query <- read.csv(path, row.names = 1)[1:100,]
+colnames(query)
+```
+
+
+## Detect BCRs only on heavy chain CDR3
+```{r}
+output1 <- match_CDR3(
+  query = query,                                 # query dataframe
+  antigen = "Sars-CoV-2",                        # antigen to search against - "Sars-CoV-2", "Tetanus", "Vaccinia", "Measles", "Mumps"
+  org = "human",                                 # organism
+  dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
+  heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
+  heavyV = NA,                                   # Optional; column name that stores heavyCDR3
+  heavyJ = NA,                                   # Optional; column name that stores heavyCDR3
+  lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
+  lightV = NA,                                   # Optional; column name that stores light chain V gene usage
+  lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
+  output_dir = "test/",                          # Optional; directory to store output file
+  ncores = 10                                    # Optional; number of cores for parallel processing
+)
+```
+
+```{r}
+dim(output1)
+output1 %>% select(heavyCDR3, ref_heavyCDR3, heavyCDR3_dist) %>% arrange(heavyCDR3_dist) %>% head() %>% show()
+```
+
+## Detect BCRs with heavy chain V, J genes and CDR3
+```{r}
+output2 <- match_CDR3(
+  query = query,                                 # query dataframe
+  antigen = "Sars-CoV-2",                        # antigen to search against - "Sars-CoV-2", "Tetanus", "Vaccinia", "Measles", "Mumps"
+  org = "human",                                 # organism
+  dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
+  heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
+  heavyV = "v_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  heavyJ = "j_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
+  lightV = NA,                                   # Optional; column name that stores light chain V gene usage
+  lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
+  output_dir = "test/",                          # Optional; directory to store output file
+  ncores = 10                                    # Optional; number of cores for parallel processing
+)
+```
+
+```{r}
+dim(output2)
+output2 %>% select(heavyCDR3, ref_heavyCDR3, heavyCDR3_dist) %>% arrange(heavyCDR3_dist) %>% head() %>% show()
+```
+
+## Detect BCRs with both heavy and light chain V, J genes and CDR3
+```{r}
+output3 <- match_CDR3(
+  query = query,                                 # query dataframe
+  antigen = "Sars-CoV-2",                        # antigen to search against - "Sars-CoV-2", "Tetanus", "Vaccinia", "Measles", "Mumps"
+  org = "human",                                 # organism
+  dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
+  heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
+  heavyV = "v_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  heavyJ = "j_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  lightCDR3 = "junction_aa_VJ",                  # Optional; column name that stores lightCDR3 amino acid sequence
+  lightV = "v_call_VJ_main",                     # Optional; column name that stores light chain V gene usage
+  lightJ = "j_call_VJ_main",                     # Optional; column name that stores light chain J gene usage
+  output_dir = "test/",                          # Optional; directory to store output file
+  ncores = 10                                    # Optional; number of cores for parallel processing
+)
+```
+
+```{r}
+dim(output3)
+output3 %>% select(barcodes, heavyCDR3, ref_heavyCDR3, heavyCDR3_dist) %>% arrange(heavyCDR3_dist) %>% head() %>% show()
+```
