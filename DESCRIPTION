@@ -15,8 +15,7 @@ Imports:
     magrittr,
     stringr,
     tibble,
-    foreach,
-    doParallel,
-    doSNOW,
+    future,
+    furrr,
     alakazam,
     stringdist
