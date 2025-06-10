@@ -37,16 +37,55 @@ output <- match_CDR3(
 )
 ```
 
+## Example Run
+```{r}
+# load example data
+path <- system.file("extdata", "dandelion_metadata.csv", package = "detectBCR")
+
+# reduce data for run time
+query <- read.csv(path, row.names = 1)[1:100,]
+
+# run match_CDR3
+output <- match_CDR3(
+  query = query,                                 # query dataframe
+  antigen = "Sars-CoV-2",                        # antigen to search against - "Sars-CoV-2", "Vaccinia", "Tetanus", "Measles", "Mumps"
+  org = "human",                                 # organism
+  dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
+  heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
+  heavyV = NA,                                   # Optional; column name that stores heavyCDR3
+  heavyJ = NA,                                   # Optional; column name that stores heavyCDR3
+  lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
+  lightV = NA,                                   # Optional; column name that stores light chain V gene usage
+  lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
+  output_dir = NULL,                             # Optional; directory to store output file
+  ncores = 1                                     # Optional; number of cores for parallel processing
+)
+```
+
 
 ## Collection
 Currently our collection contains BCR sequences bind to the following antigens : 
+* `Sars-CoV-2` 
 * `Sars-CoV-2` 
 * `Vaccinia`
 * `Tetanus` - TBC
 * `Measles` - TBC
 * `Mumps` - TBC
+* `Tetanus` - TBC
+* `Measles` - TBC
+* `Mumps` - TBC
 
 ```
+| VERSION | ANTIGEN    | DATABASE           | REANALYSIS |  NOTE | DOI  |
+| ------- | ---------- | ------------------ | ---------- | ---- | ---- |
+| v0.0.0  | Sars-CoV-2 | CoV-AbDab          | N          |      | 10.1093/bioinformatics/btaa739 |
+| v0.0.0  | Vaccinia   | Chappert_2022      | Y          | B5+  | 10.1016/j.immuni.2022.08.019   |
+| v0.0.1  | Sars-CoV-2 | LopezDeAssis_2023  | Y          | S2P+ | 10.1016/j.celrep.2023.112780   |
+| v0.0.1  | Sars-CoV-2 | FerreiraGomez_2024 | Y          | TBC  | 10.1038/s41467-024-48570-0     |
+| v0.0.1  | Tetanus    | FerreiraGomez_2024 | Y          | TBC  | 10.1038/s41467-024-48570-0     |    
+| v0.0.1  | Measles    |                    |            |      | 
+
+
 | VERSION | ANTIGEN    | DATABASE           | REANALYSIS |  NOTE | DOI  |
 | ------- | ---------- | ------------------ | ---------- | ---- | ---- |
 | v0.0.0  | Sars-CoV-2 | CoV-AbDab          | N          |      | 10.1093/bioinformatics/btaa739 |
