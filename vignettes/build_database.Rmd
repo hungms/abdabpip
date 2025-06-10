@@ -61,6 +61,8 @@ covid_dab[[1]] <- dab
 ### LopezDeAssis_2023
 ```{r}
 dab <- read.csv("./resources/Sars-CoV-2/LopezDeAssis_2023.csv")
+dab <- dab %>%
+  filter(str_detect(.[[1]], "^Spike_B_cell"))
 dab %>% head() %>% show()
 ```
 
