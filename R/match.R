@@ -87,22 +87,45 @@ match_CDR3 <- function(
         dplyr::select(barcodes, names(cols_to_match))
 
     # get collection
-    collection <- get_reference(antigen = antigen)
+    reference <- get_reference(antigen = antigen)  %>%
+        filter(ref_org == org)
 
     # add CDR3 length columns in query data frame
-    if(any(!is.na(CDR3_to_match))){
-        for(i in names(CDR3_to_match)){
-            query <- query %>%
-                mutate(!!paste0(i, "_length") := nchar(!!sym(i)))}}
+    for(i in names(CDR3_to_match)){
+        query <- query %>%
+            filter(!!sym(i) != "") %>%
+            filter(!!sym(i) != "NA") %>%
+            filter(!!sym(i) != "None") %>%
+            filter(!is.na(!!sym(i))) %>%
+            mutate(!!paste0(i, "_length") := nchar(!!sym(i)))}
 
     # add CDR3 length columns in reference data frame
-    reference <- collection %>%
-        filter(ref_org == org) %>%
-        filter(ref_heavyCDR3 != "") %>%
-        filter(!is.na(ref_heavyCDR3)) %>%
-        mutate(
-            ref_heavyCDR3_length = nchar(ref_heavyCDR3),
-            ref_lightCDR3_length = nchar(ref_lightCDR3))
+    for(i in paste0("ref_", names(CDR3_to_match))){
+        reference <- reference %>%
+            filter(!!sym(paste0(i)) != "") %>%
+            filter(!!sym(paste0(i)) != "NA") %>%
+            filter(!!sym(paste0(i)) != "None") %>%
+            filter(!is.na(!!sym(paste0(i)))) %>%
+            mutate(!!paste0(i, "_length") := nchar(!!sym(paste0(i))))}
+
+    if(length(genes_to_match) > 0){
+        # remove NAs from genes_to_match in query data frame
+        for(i in names(genes_to_match)){
+            query <- query %>%
+                filter(str_detect(!!sym(i), "^IG[HKL]")) %>%
+                filter(!!sym(i) != "") %>%
+                filter(!!sym(i) != "NA") %>%
+                filter(!!sym(i) != "None") %>%
+                filter(!is.na(!!sym(i)))}
+
+        # remove NAs from genes_to_match in reference data frame
+        for(i in paste0("ref_", names(genes_to_match))){
+            reference <- reference %>%
+                filter(str_detect(!!sym(i), "^IG[HKL]")) %>%
+                filter(!!sym(paste0(i)) != "") %>%
+                filter(!!sym(paste0(i)) != "NA") %>%
+                filter(!!sym(paste0(i)) != "None") %>%
+                filter(!is.na(!!sym(paste0(i))))}}
 
     message(paste0("\nMatching ", nrow(query), " BCR sequences in QUERY against ", nrow(reference), " BCR sequences in ", org, " REFERENCE..."))
     message(paste0("\nMatching columns: ", paste0(names(cols_to_match), collapse = ", "), "..."))
