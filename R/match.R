@@ -110,8 +110,8 @@ match_CDR3 <- function(
 
     # Run VJ Match
     #========================================================
-    # register parallel backend
-    doParallel::registerDoParallel(ncores)
+    # Setup future backend for parallelization
+    future::plan(future::multisession, workers = ncores)
     
     # create list to store outputs
     output.list <- list()
@@ -120,21 +120,20 @@ match_CDR3 <- function(
     if("hamming" %in% dist_method){
         message(paste0("\nRunning hamming distance matching..."))
 
-        # for each reference sequence
-        output.list[[length(output.list) + 1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
-            # log progress bar
-            log_progress_bar(i, nrow(reference))
-
+        # Using future + furrr
+        output.list[[length(output.list) + 1]] <- furrr::future_map_dfr(1:nrow(reference), function(i) {
             # add CDR3 sequence and length columns from reference data frame in query data frame
             tmp <- query
             for(col in colnames(reference)){
-                tmp[[col]] <- reference[i, ][[col]]}
+                tmp[[col]] <- reference[i, ][[col]]
+            }
 
             # filter query for matching CDR3 sequence in heavy/light chains
             if(length(genes_to_match) > 0){
                 for(col in names(genes_to_match)){
                     tmp <- tmp %>%
-                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))}
+                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))
+                }
             }
             
             # hamming distance requires matching CDR3 length
@@ -146,8 +145,8 @@ match_CDR3 <- function(
 
                 # check if there are any matching sequences
                 if(nrow(tmp) == 0) {
-                    warning("\nNo matching BCR sequences found")
-                    next}
+                    next
+                }
 
                 # calculate hamming distance
                 y <- reference[i, ][[paste0("ref_", col)]]
@@ -158,33 +157,36 @@ match_CDR3 <- function(
                 cond2 <- any(is.na(tmp[[col]]))
 
                 if(any(cond1, cond2)){
-                    tmp[[paste0(col, "_dist")]] <- NA}
-                else{
-                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){alakazam::seqDist(y, x, alakazam::getAAMatrix()) / nchar(y)}))}}
+                    tmp[[paste0(col, "_dist")]] <- NA
+                } else {
+                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){
+                        alakazam::seqDist(y, x, alakazam::getAAMatrix()) / nchar(y)
+                    }))
+                }
+            }
 
-            return(tmp)}
-        }
-
+            return(tmp)
+        }, .options = furrr::furrr_options(seed = TRUE))
+    }
 
     # if levenshtein is in dist_method, run matching
     if("levenshtein" %in% dist_method){
         message(paste0("\nRunning levenshtein distance matching..."))
         
-        # for each reference sequence
-        output.list[[length(output.list) + 1]] <- foreach::foreach(i = 1:nrow(reference), .combine=rbind) %dopar% {
-            # log progress bar
-            log_progress_bar(i, nrow(reference))
-
+        # Using future + furrr
+        output.list[[length(output.list) + 1]] <- furrr::future_map_dfr(1:nrow(reference), function(i) {
             # add CDR3 sequence and length columns from reference data frame in query data frame
             tmp <- query
             for(col in colnames(reference)){
-                    tmp[[col]] <- reference[i, ][[col]]}
+                tmp[[col]] <- reference[i, ][[col]]
+            }
             
             # filter query for matching CDR3 sequence in heavy/light chains
             if(length(genes_to_match) > 0){
                 for(col in names(genes_to_match)){
                     tmp <- tmp %>%
-                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))}
+                        filter(!!sym(paste0(col)) == !!sym(paste0("ref_", col)))
+                }
             }
 
             #  levenshtein distance does not require matching CDR3 length
@@ -192,9 +194,8 @@ match_CDR3 <- function(
 
                 # check if there are any matching sequences
                 if(nrow(tmp) == 0) {
-                    warning("\nNo matching BCR sequences found")
                     next
-                    }
+                }
 
                 # calculate levenshtein distance
                 y <- reference[i, ][[paste0("ref_", col)]]
@@ -205,13 +206,17 @@ match_CDR3 <- function(
                 cond2 <- any(is.na(tmp[[col]]))
                 
                 if(any(cond1, cond2)){
-                    tmp[[paste0(col, "_dist")]] <- NA}
-                else{
-                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))}))}
+                    tmp[[paste0(col, "_dist")]] <- NA
+                } else {
+                    tmp[[paste0(col, "_dist")]] <- as.numeric(lapply(tmp[[col]], function(x){
+                        stringdist::stringdist(y, x, method = 'lv') / max(nchar(y), nchar(x))
+                    }))
                 }
+            }
             
-            return(tmp)}
-        }
+            return(tmp)
+        }, .options = furrr::furrr_options(seed = TRUE))
+    }
 
     # combine outputs
     output <- bind_rows(output.list)
