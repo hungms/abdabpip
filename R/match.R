@@ -29,6 +29,10 @@ match_CDR3 <- function(
     ncores = 1,
     output_dir = NULL){
     
+    # Package version message
+    #========================================================
+    pkg_version <- as.character(packageVersion("detectBCR"))
+    message(paste0("Runnning on detectBCR v", pkg_version, "..."))
 
     # Validate Inputs
     #========================================================
@@ -39,7 +43,7 @@ match_CDR3 <- function(
     ## remove rows with less than 5 amino acids in heavyCDR3
     rows_to_remove <- !str_detect(query[[heavyCDR3]], "^(?=(?:[^A-Z]*[A-Z]){5})[A-Z]+$")
     if(any(rows_to_remove)){
-        message(paste0("\nRemoving ", sum(rows_to_remove), " rows with invalid CDR3 sequences in ", heavyCDR3, " in QUERY data frame..."))
+        message(paste0("\nQUERY - Removing ", sum(rows_to_remove), " rows with invalid CDR3 sequences in ", heavyCDR3, "..."))
         query <- query[!rows_to_remove, ]}
 
     # check ncores is valid
@@ -70,11 +74,7 @@ match_CDR3 <- function(
     cols_to_match <- c(genes_to_match, CDR3_to_match)
 
     stopifnot(all(cols_to_match %in% colnames(query)))
-
-    # Logging
-    #========================================================
-    #log_message()
-
+    
     # Format Data
     #========================================================
     # change colnames in query data frame
