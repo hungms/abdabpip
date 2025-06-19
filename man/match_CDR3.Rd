@@ -2,12 +2,11 @@
 % Please edit documentation in R/match.R
 \name{match_CDR3}
 \alias{match_CDR3}
-\title{Match CDR3 sequences between query and antigen collection}
+\title{Match CDR3 sequences between query and reference}
 \usage{
 match_CDR3(
   query,
-  antigen,
-  org,
+  reference,
   heavyCDR3,
   heavyV = NA,
   heavyJ = NA,
@@ -22,9 +21,7 @@ match_CDR3(
 \arguments{
 \item{query}{The query data frame}
 
-\item{antigen}{The antigen to match}
-
-\item{org}{The organism to match}
+\item{reference}{The reference data frame}
 
 \item{heavyCDR3}{The heavy chain CDR3 sequence}
 
@@ -48,5 +45,5 @@ match_CDR3(
 A data frame with the matched CDR3 sequences
 }
 \description{
-Match CDR3 sequences between query and antigen collection
+Match CDR3 sequences between query and reference
 }

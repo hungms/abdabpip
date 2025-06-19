@@ -1,8 +1,7 @@
-#' Match CDR3 sequences between query and antigen collection
+#' Match CDR3 sequences between query and reference
 #' 
 #' @param query The query data frame
-#' @param antigen The antigen to match
-#' @param org The organism to match
+#' @param reference The reference data frame
 #' @param heavyCDR3 The heavy chain CDR3 sequence
 #' @param heavyV The heavy chain V gene
 #' @param heavyJ The heavy chain J gene
@@ -17,8 +16,7 @@
 
 match_CDR3 <- function(
     query,
-    antigen,
-    org,
+    reference,
     heavyCDR3,
     heavyV = NA,
     heavyJ = NA,
@@ -39,6 +37,9 @@ match_CDR3 <- function(
     # check query is a data frame
     stopifnot(is.data.frame(query))
 
+    # check reference is a data frame
+    stopifnot(is.data.frame(reference))
+
     # check if there are any invalid CDR3 sequences in heavyCDR3
     ## remove rows with less than 5 amino acids in heavyCDR3
     rows_to_remove <- !str_detect(query[[heavyCDR3]], "^(?=(?:[^A-Z]*[A-Z]){5})[A-Z]+$")
@@ -48,12 +49,6 @@ match_CDR3 <- function(
 
     # check ncores is valid
     stopifnot(ncores > 0 & is.numeric(ncores))
-
-    # check antigen is valid
-    stopifnot(antigen %in% c("Sars-CoV-2", "Tetanus", "Vaccinia", "Measles", "Mumps"))
-
-    # check org is valid
-    stopifnot(org %in% c("human", "mouse"))
 
     # check dist_method is valid
     stopifnot(all(dist_method %in% c("levenshtein", "hamming")))
@@ -74,6 +69,7 @@ match_CDR3 <- function(
     cols_to_match <- c(genes_to_match, CDR3_to_match)
 
     stopifnot(all(cols_to_match %in% colnames(query)))
+    stopifnot(all(paste0("ref_", names(cols_to_match)) %in% colnames(reference)))
     
     # Format Data
     #========================================================
@@ -85,10 +81,6 @@ match_CDR3 <- function(
     query <- query %>%
         rownames_to_column("barcodes") %>%
         dplyr::select(barcodes, names(cols_to_match))
-
-    # get collection
-    reference <- get_reference(antigen = antigen)  %>%
-        filter(ref_org == org)
 
     # add CDR3 length columns in query data frame
     for(i in names(CDR3_to_match)){
@@ -127,9 +119,8 @@ match_CDR3 <- function(
                 filter(!!sym(paste0(i)) != "None") %>%
                 filter(!is.na(!!sym(paste0(i))))}}
 
-    message(paste0("\nMatching ", nrow(query), " BCR sequences in QUERY against ", nrow(reference), " BCR sequences in ", org, " REFERENCE..."))
+    message(paste0("\nMatching ", nrow(query), " BCR sequences in QUERY against ", nrow(reference), " BCR sequences in REFERENCE..."))
     message(paste0("\nMatching columns: ", paste0(names(cols_to_match), collapse = ", "), "..."))
-    message(paste0("\nSearching for ", antigen, "-specific BCR sequences..."))
 
     # Run VJ Match
     #========================================================
@@ -270,10 +261,10 @@ match_CDR3 <- function(
         # order output data frame 
         output <- output %>% 
             rowwise() %>%
-            mutate(sum_dist = mean(c_across(all_of(dist_cols)), na.rm = T)) %>%
+            mutate(mean_dist = mean(c_across(all_of(dist_cols)), na.rm = T)) %>%
             ungroup() %>%
             group_by(barcodes) %>% # group by barcode
-            slice_min(n = 1, order_by = sum_dist) %>% # get the barcode with the minimum sum of distances
+            slice_min(n = 1, order_by = mean_dist) %>% # get the barcode with the minimum mean of distances
             ungroup()
 
         # found matching BCR sequences
@@ -281,7 +272,7 @@ match_CDR3 <- function(
 
         #write output to file
         if(!is.null(output_dir)){
-            filename <- paste0(output_dir, "/", antigen, "_", org, "_", "match_", paste0(names(cols_to_match), collapse = "_"), ".csv")
+            filename <- paste0(output_dir, "/match_", paste0(names(cols_to_match), collapse = "_"), ".csv")
             write.csv(output, filename, row.names = F)}
 
         # return output

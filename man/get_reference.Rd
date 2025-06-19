@@ -4,10 +4,12 @@
 \alias{get_reference}
 \title{Get reference data frame}
 \usage{
-get_reference(antigen)
+get_reference(antigen, org)
 }
 \arguments{
 \item{antigen}{The antigen to get the reference data frame for}
+
+\item{org}{The organism to get the reference data frame for}
 }
 \value{
 A data frame with the reference data
