@@ -1,10 +1,15 @@
 ## detectBCR
-An R package to detect and visualize antigen-specific BCRs and clonotypes by cross-referencing individual query sequence to our manually curated collection of known antigen-binding BCR sequences.
+An R package to detect and visualize antigen-specific BCRs and clonotypes by cross-referencing individual query sequence to our manually curated collection of known antigen-binding BCR contigs.
 
-## Functionality
-* Match individual query BCR to antigen-binding BCR base on heavy/light chain VJ gene usage
-* Determine minimum `levenshtein` or `hamming` distances for query CDR3 sequences to our antigen-binding BCR sequences
-* Determine convergent, antigen-specific clones
+The package consist 2 functions to determine if how similar your BCR contigs are to an antigen-specific BCR.
+
+`get_reference()` allows users to
+* Request reference database for known antigen-specific BCR contigs.
+
+`match_CDR3()` allows users to
+* Filter individual query BCR contigs by matching heavy/light chain VJ gene usage with reference BCR contigs.
+* Determine minimum `levenshtein` or `hamming` distances for query CDR3 sequences to matched reference CDR3 sequences.
+
 
 ## Installation
 ```{r}
@@ -12,29 +17,67 @@ install.packages("devtools")
 devtools::install_github("hungms/detectBCR", dependencies = T)
 ```
 
-## Example Run
+
+## Understanding the pipeline
+
+### Query format
 ```{r}
-# load example data
+# get example query data
 path <- system.file("extdata", "dandelion_metadata.csv", package = "detectBCR")
+query <- read.csv(path, row.names = 1)[1:10,] # reduce data for run time
+head(query)
+```
 
-# reduce data for run time
-query <- read.csv(path, row.names = 1)[1:100,]
+### Reference format
+```{r}
+# get reference Sars-CoV2 BCR database
+reference <- get_reference(antigen = "Sars-CoV-2",  org = "human")
+head(reference)
+```
 
+
+### Running match_CDR3()
+Below we will match our BCR contigs with the reference contigs based on the same VJ gene usage on the heavy chain, as well as calculating minimum heavy chain CDR3 distance to known antigen specific CDR3s.
+```{r}
 # run match_CDR3
 output <- match_CDR3(
   query = query,                                 # query dataframe
-  antigen = "Sars-CoV-2",                        # antigen to search against - "Sars-CoV-2", "Vaccinia", "Tetanus", "Measles", "Mumps"
-  org = "human",                                 # organism
+  reference = reference,                         # reference dataframe
   dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
   heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
-  heavyV = NA,                                   # Optional; column name that stores heavyCDR3
-  heavyJ = NA,                                   # Optional; column name that stores heavyCDR3
-  lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
-  lightV = NA,                                   # Optional; column name that stores light chain V gene usage
-  lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
-  output_dir = NULL,                             # Optional; directory to store output file
-  ncores = 1                                     # Optional; number of cores for parallel processing
+  heavyV = "v_vall_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  heavyJ = "j_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
+  # lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
+  # lightV = NA,                                   # Optional; column name that stores light chain V gene usage
+  # lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
+  # output_dir = NULL,                             # Optional; directory to store output file
+  # ncores = 1                                     # Optional; number of cores for parallel processing
 )
+```
+
+### Output & downstream analysis
+
+Running the pipeline should return a dataframe of query contigs matching with the closest antigen-specifc contigs. The dataframe should contain columns as follows:
+
+`ref_*` = reference BCR metadata.
+`dist_method` = method to calculate CDR3 amino acid distance, either `hamming` or `levenshtein`.
+`dist` = CDR3 amino acid distance calculated from `dist_method`, containing values ranging from 0 to 1. 0 means the CDR3 between query and reference sequence is an exact match.
+`mean_dist` = mean CDR3 amino acid distance containing values ranging from 0 to 1. This is an average of `dist` when both `heavyCDR3` and `lightCDR3` contigs are matched.
+
+```{r}
+head(output)
+```
+
+
+Users can define "antigen-specificity" base on their choice of method and threshold. For example, we have defined antigen-speficic BCRs base on levenshtein distance less than 0.2.
+
+```{r}
+ag_specific_bcr <- output %>%
+  filter(dist_method == "levenshtein") %>%
+  filter(dist < 0.2)
+
+head(ag_specific_bcr)
+dim(ag_specific_bcr)
 ```
 
 
@@ -64,15 +107,16 @@ Terms :
 `Public Clones` = Clones containing BCR sequence matching our antigen-binding BCR database
 `Convergent Clones` = Antigen-specific clones that are present in multiple individuals
 
-Abbreviations :
-`heavyV` = Heavy chain V gene
-`heavyJ` = Heavy chain J gene
-`heavyCDR3` = Heavy chain CDR3 amino acid sequence
-`lightV` = Light chain V gene
-`lightJ` = Light chain J gene
-`ligjtCDR3` = Light chain CDR3 amino acid sequence
+Abbreviations :  
 
-## Inspiration
+`heavyV` = Heavy chain V gene  
+`heavyJ` = Heavy chain J gene  
+`heavyCDR3` = Heavy chain CDR3 amino acid sequence  
+`lightV` = Light chain V gene  
+`lightJ` = Light chain J gene  
+`ligjtCDR3` = Light chain CDR3 amino acid sequence  
+
+## Citation
 Codes were adapted from previous publication in Cell Reports :
 
 ```
