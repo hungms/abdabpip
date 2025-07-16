@@ -79,7 +79,7 @@ Abbreviations :
 `lightJ` = Light chain J gene  
 
 
-## Setting distance threshold to define antigen-specificity
+### Setting distance threshold to define antigen-specificity
 Running the pipeline should return a dataframe of query contigs matching with the closest antigen-specifc contigs. The dataframe should contain columns as follows :  
 `ref_*` = metadata from reference database
 `dist_method` = method used to calculate CDR3 distance, either `hamming` or `levenshtein`  
