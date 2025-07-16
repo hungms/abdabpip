@@ -15,7 +15,6 @@ knitr:
     comment: '#>'
 ---
 
-```{r session_info}
-library(plotr)
+```{r}
 sessionInfo()
 ```

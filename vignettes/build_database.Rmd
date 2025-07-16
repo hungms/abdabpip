@@ -66,6 +66,7 @@ dab %>% head() %>% show()
 
 ```{r}
 dab <- dab %>%
+  filter(str_detect(.[[1]], "^Spike")) %>%
   mutate(
     antigen = "Sars-CoV-2",
     ref_source = "LopezDeAssis_2023",

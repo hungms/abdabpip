@@ -17,5 +17,5 @@ Imports:
     tibble,
     future,
     furrr,
-    alakazam,
-    stringdist
+    stringdist,
+    data.table

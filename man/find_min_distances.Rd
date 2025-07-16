@@ -4,14 +4,10 @@
 \alias{find_min_distances}
 \title{Find minimum distances}
 \usage{
-find_min_distances(output, cols_to_match, output_dir = NULL)
+find_min_distances(output)
 }
 \arguments{
 \item{output}{The output data frame}
-
-\item{cols_to_match}{The columns to match}
-
-\item{output_dir}{The output directory}
 }
 \value{
 A data frame with the minimum

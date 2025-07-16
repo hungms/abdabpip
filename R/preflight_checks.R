@@ -78,7 +78,7 @@ preflight_query <- function(query, cols_to_match){
     }
 
     nrow_query_genes <- nrow(query)
-    message(paste0("\nQUERY : ", nrow_query_genes, "/", nrow_query_cdr3, " rows remaining after removing rows with invalid genes"))
+    message(paste0("\nQUERY : ", nrow_query_genes, "/", nrow_query_cdr3, " rows remaining after removing rows with invalid VJ genes"))
 
     # return query
     return(query)
@@ -113,8 +113,10 @@ preflight_reference <- function(reference, cols_to_match){
     # get CDR3 and gene columns to match
     cdr3_to_match <- cols_to_match[str_detect(names(cols_to_match), "CDR3")]
     names(cdr3_to_match) <- paste0("ref_", names(cdr3_to_match))
+
     genes_to_match <- cols_to_match[!str_detect(names(cols_to_match), "CDR3")]
-    names(genes_to_match) <- paste0("ref_", names(genes_to_match))
+    if(length(genes_to_match) > 0){
+        names(genes_to_match) <- paste0("ref_", names(genes_to_match))}
 
     # FOR CDR3 COLUMNS
     #========================================================
@@ -158,7 +160,7 @@ preflight_reference <- function(reference, cols_to_match){
     }
 
     nrow_reference_genes <- nrow(reference)
-    message(paste0("\nREFERENCE : ", nrow_reference_genes, "/", nrow_reference_cdr3, " rows remaining after removing rows with invalid genes"))
+    message(paste0("\nREFERENCE : ", nrow_reference_genes, "/", nrow_reference_cdr3, " rows remaining after removing rows with invalid VJ genes"))
 
     # return reference
     return(reference)

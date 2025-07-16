@@ -47,16 +47,34 @@ find_publicBCR <- function(
 
     # Find hamming distance
     if("hamming" %in% dist_method){
-        output.list[[length(output.list) + 1]] <- find_hamming_dist(query, reference, cols_to_match, ncores)}
+        hamming_output <- find_hamming_dist(query, reference, cols_to_match, ncores)
+        output.list[[length(output.list) + 1]] <- find_min_distances(hamming_output)}
 
     # Find levenshtein distance
     if("levenshtein" %in% dist_method){
-        output.list[[length(output.list) + 1]] <- find_levenshtein_dist(query, reference, cols_to_match, ncores)}
+        levenshtein_output <- find_levenshtein_dist(query, reference, cols_to_match, ncores)
+        output.list[[length(output.list) + 1]] <- find_min_distances(levenshtein_output)}
 
     # combine outputs
     output <- bind_rows(output.list)
 
-    # Find minimum distances
-    #========================================================
-    find_min_distances(output, cols_to_match, output_dir)
+    # write output to file
+    if(!is.null(output_dir)){
+
+        heavy_name <- names(cols_to_match)[str_detect(names(cols_to_match), "heavy")]
+        heavy_name <- rev(sort(heavy_name))
+        heavy_name <- paste0("heavy", paste0(gsub("heavy", "", heavy_name), collapse = ""))
+
+        light_name <- names(cols_to_match)[str_detect(names(cols_to_match), "light")]
+        light_name <- rev(sort(light_name))
+        if(length(light_name) > 0){
+            light_name <- paste0("_light", paste0(gsub("light", "", light_name), collapse = ""))}
+        else{
+            light_name <- ""}
+
+        filename <- paste0(output_dir, "/publicBCR_by_", heavy_name, light_name, ".csv")
+        write.csv(output, filename, row.names = F)}
+
+    # return output
+    return(output)
 }
