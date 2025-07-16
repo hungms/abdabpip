@@ -3,6 +3,7 @@
 #' @param antigen The antigen to get the reference data frame for
 #' @param org The organism to get the reference data frame for
 #' @return A data frame with the reference data
+#' @import dplyr magrittr stringr data.table
 #' @export
 
 get_reference <- function(antigen, org){
