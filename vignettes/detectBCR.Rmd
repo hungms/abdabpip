@@ -38,7 +38,7 @@ head(reference)
 
 ## Detect BCRs only on heavy chain CDR3
 ```{r}
-output1 <- match_CDR3(
+output1 <- find_publicBCR(
   query = query,                                 # query dataframe
   reference = reference,                         # reference dataframe
   dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
@@ -60,7 +60,7 @@ output1 %>% select(heavyCDR3, ref_heavyCDR3, heavyCDR3_dist) %>% arrange(heavyCD
 
 ## Detect BCRs with heavy chain V, J genes and CDR3
 ```{r}
-output2 <- match_CDR3(
+output2 <- find_publicBCR(
   query = query,                                 # query dataframe
   reference = reference,                         # reference dataframe
   dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
@@ -82,7 +82,7 @@ output2 %>% select(heavyCDR3, ref_heavyCDR3, heavyCDR3_dist) %>% arrange(heavyCD
 
 ## Detect BCRs with both heavy and light chain V, J genes and CDR3
 ```{r}
-output3 <- match_CDR3(
+output3 <- find_publicBCR(
   query = query,                                 # query dataframe
   reference = reference,                         # reference dataframe
   dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
