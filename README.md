@@ -1,15 +1,13 @@
 ## detectBCR
-An R package to detect and visualize antigen-specific BCRs and clonotypes by cross-referencing individual query sequence to our manually curated collection of known antigen-binding BCR contigs.
+An R package to detect and visualize antigen-specific BCRs by cross-referencing individual query sequence to our manually curated collection of known antigen-binding BCR contigs.
 
-The package consist 2 functions to determine if how similar your BCR contigs are to an antigen-specific BCR.
+The package consist 2 main functions :  
 
-`get_reference()` allows users to
-* Request reference database for known antigen-specific BCR contigs.
+`get_reference()` allows users to request a reference database of BCR contigs specific for the antigen of interest.
 
-`match_CDR3()` allows users to
-* Filter individual query BCR contigs by matching heavy/light chain VJ gene usage with reference BCR contigs.
-* Determine minimum `levenshtein` or `hamming` distances for query CDR3 sequences to matched reference CDR3 sequences.
-
+`find_publicBCR()` allows users to
+* Select query BCR contigs with matching heavy/light chain VJ gene usage with reference BCR contigs
+* Determine how similar each query CDR3 amino acid (AA) sequence is to all antigen-specific CDR3 AA sequences
 
 ## Installation
 ```{r}
@@ -18,9 +16,15 @@ devtools::install_github("hungms/detectBCR", dependencies = T)
 ```
 
 
-## Understanding the pipeline
+## Running the pipeline
 
-### Query format
+In this tutorial we will demonstrate how we can determine **PUBLIC** Sar-CoV-2 specific BCR sequences from the example data in the package.
+
+### Example query data
+Here we will load the example QUERY data included in the package, which contain single-cell BCR sequences from plasma cells after SARS-CoV-2 mRNA-1273 vaccine. 
+
+Each row of the data should represent a cell / unique pair of BCR sequence. The data **must** contain a column for heavy chain CDR3 AA sequence, and optionally other columns containing information about V gene, J gene, CDR3 AA sequence for heavy/light chain.
+
 ```{r}
 # get example query data
 path <- system.file("extdata", "dandelion_metadata.csv", package = "detectBCR")
@@ -28,7 +32,8 @@ query <- read.csv(path, row.names = 1)[1:10,] # reduce data for run time
 head(query)
 ```
 
-### Reference format
+### Request reference data
+
 ```{r}
 # get reference Sars-CoV2 BCR database
 reference <- get_reference(antigen = "Sars-CoV-2",  org = "human")
@@ -36,20 +41,24 @@ head(reference)
 ```
 
 
-### Running match_CDR3()
-Below we will match our BCR contigs with the reference contigs based on the same VJ gene usage on the heavy chain, as well as calculating minimum heavy chain CDR3 distance to known antigen specific CDR3s.
+### Running find_publicBCR()
+Below we will match the query BCR contigs with the Sars-CoV reference BCR contigs
+
+
+
+Distance calculation
 ```{r}
-# run match_CDR3
+# run find_publicBCR
 output <- match_CDR3(
   query = query,                                 # query dataframe
   reference = reference,                         # reference dataframe
   dist_method = c("hamming", "levenshtein"),     # CDR3 distance calculation method
-  heavyCDR3 = "junction_aa_VDJ",                 # Required; column name that stores heavyCDR3 amino acid sequence
-  heavyV = "v_vall_VDJ_main",                    # Optional; column name that stores heavyCDR3
-  heavyJ = "j_call_VDJ_main",                    # Optional; column name that stores heavyCDR3
-  # lightCDR3 = NA,                                # Optional; column name that stores lightCDR3 amino acid sequence
-  # lightV = NA,                                   # Optional; column name that stores light chain V gene usage
-  # lightJ = NA,                                   # Optional; column name that stores light chain J gene usage
+  heavyCDR3 = "junction_aa_VDJ",                 # Required; query column name that stores heavyCDR3 amino acid sequence
+  heavyV = "v_vall_VDJ_main",                    # Optional; query column name that stores heavyCDR3
+  heavyJ = "j_call_VDJ_main",                    # Optional; query column name that stores heavyCDR3
+  # lightCDR3 = NA,                                # Optional; query column name that stores lightCDR3 amino acid sequence
+  # lightV = NA,                                   # Optional; query column name that stores light chain V gene usage
+  # lightJ = NA,                                   # Optional; query column name that stores light chain J gene usage
   # output_dir = NULL,                             # Optional; directory to store output file
   # ncores = 1                                     # Optional; number of cores for parallel processing
 )
@@ -100,12 +109,21 @@ Currently our collection contains BCR sequences bind to the following antigens :
 | v0.0.1  | Measles    |                    |            |      | 
 
 
+| VERSION | ANTIGEN    | DATABASE           | REANALYSIS |  NOTE | DOI  |
+| ------- | ---------- | ------------------ | ---------- | ---- | ---- |
+| v0.0.0  | Sars-CoV-2 | CoV-AbDab          | N          |      | 10.1093/bioinformatics/btaa739 |
+| v0.0.0  | Vaccinia   | Chappert_2022      | Y          | B5+  | 10.1016/j.immuni.2022.08.019   |
+| v0.0.1  | Sars-CoV-2 | LopezDeAssis_2023  | Y          | S2P+ | 10.1016/j.celrep.2023.112780   |
+| v0.0.1  | Sars-CoV-2 | FerreiraGomez_2024 | Y          | TBC  | 10.1038/s41467-024-48570-0     |
+| v0.0.1  | Tetanus    | FerreiraGomez_2024 | Y          | TBC  | 10.1038/s41467-024-48570-0     |    
+| v0.0.1  | Measles    |                    |            |      | 
 ```
 
 ## Glossary
-Terms :
-`Public Clones` = Clones containing BCR sequence matching our antigen-binding BCR database
-`Convergent Clones` = Antigen-specific clones that are present in multiple individuals
+Terms :  
+
+`Public Clones` = Clones containing BCR sequence matching our antigen-binding BCR database  
+`Convergent Clones` = Antigen-specific clones that are present in multiple individuals  
 
 Abbreviations :  
 

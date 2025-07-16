@@ -1,6 +1,6 @@
 Package: detectBCR
 Title:  An R package to detect and visualize antigen-specific BCRs
-Version: 0.0.1
+Version: 0.0.2
 Authors@R: 
     person(given = "Miu Shing", family = "Hung", email = "matthewhungms@gmail.com", role = c("aut", "cre"), comment = c(ORCID = "0009-0004-0412-4374"))
 Description: An R package to detect and visualize antigen-specific BCRs
